@@ -15,13 +15,17 @@ userRouter.get('/:id', (req, res) => {
 })
 // validate
 function Validate(req, res, next) {
-    if((parseInt(req.body.age) > 0) && (typeof req.body.fullname ==='string')){
-        next()
+    const nameRegex = /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂẾưăạảấầẩẫậắằẳẵặẹẻẽềềểếỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỬỮỰỲỴÝỶỸửữựỳỵỷỹ ]+$/
+    if(parseInt(req.body.age) <= 0){
+        res.status(400).json({message:'age not valid'})
+    }
+    else if(!nameRegex.test(req.body.fullname)){
+        res.status(400).json({message:'fullname not valid'})
     }
     else{
-        res.status(400).json({ message: "Age or Name is not valid" });
+        next()
     }
-}
+}   
 
 // create new user
 userRouter.post('/', Validate, (req, res) => {
@@ -43,13 +47,13 @@ userRouter.put('/:id', (req, res) => {
         res.status(204).json({ msg: 'user updated', updated });
     }
     else {
-        res.send("not found")
+        res.json({'message':'not found'})
     }
 
 })
 // delete user
 userRouter.delete('/:id', (req, res) => {
     users = users.filter(user => user.id !== parseInt(req.params.id));
-    res.status(204).send('')
+    res.status(204).res.json({'message':''})
 })
 module.exports = userRouter
