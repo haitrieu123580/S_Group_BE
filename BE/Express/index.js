@@ -9,6 +9,4 @@ app.use(express.urlencoded({ extended: false }));
 
 app.use('/users',userRouter)
 
-
-
 app.listen(PORT, () =>{ console.log(`listening on ${PORT}`)})

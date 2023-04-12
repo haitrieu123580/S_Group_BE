@@ -1,59 +1,82 @@
 const express = require("express")
 const userRouter = express.Router();
-let users = require('../User')
-
-let id = users.length
+const connection = require('../database/connection')
 
 // get all users
 userRouter.get('/', (req, res) => {
-    res.json(users)
+    connection.query('select * from Users', (err, result) => {
+        const mappedResult = result.map((row) => {
+            return {
+                ...row,
+                gender: row.gender === 1 ? true : false,
+            };
+        });
+        res.json(mappedResult);
+    })
+
 })
 // get user by id
 userRouter.get('/:id', (req, res) => {
-    const found = users.find(user => user.id == parseInt(req.params.id))
-    res.json(found).status(200)
+    connection.query('select * from Users where id = ?', [parseInt(req.params.id)], (err, result) => {
+        if (err) throw err
+        const mappedResult = result.map((row) => {
+            return {
+                ...row,
+                gender: row.gender === 1 ? true : false,
+            };
+        });
+        res.json(mappedResult).status(200);
+    })
+
 })
 // validate
 function Validate(req, res, next) {
     const nameRegex = /^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂẾưăạảấầẩẫậắằẳẵặẹẻẽềềểếỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỬỮỰỲỴÝỶỸửữựỳỵỷỹ ]+$/
-    if(parseInt(req.body.age) <= 0){
-        res.status(400).json({message:'age not valid'})
+    if (parseInt(req.body.age) <= 0) {
+        res.status(400).json({ message: 'age not valid' })
     }
-    else if(!nameRegex.test(req.body.fullname)){
-        res.status(400).json({message:'fullname not valid'})
+    else if (!nameRegex.test(req.body.fullname)) {
+        res.status(400).json({ message: 'fullname not valid' })
     }
-    else{
+    else {
         next()
     }
-}   
+}
 
 // create new user
 userRouter.post('/', Validate, (req, res) => {
-    const newUser = {
-        "id": id + 1,
-        ...req.body,
-    }
-    id = id + 1
-    users.push(newUser)
-    res.status(201).json(newUser)
+    let fullname = req.body.fullname
+    let age = parseInt(req.body.age)
+    let gender = (req.body.gender === "true")
+    connection.query('insert into Users (fullname, age, gender) values (?,?,?)', [fullname, age, gender], (err, result) => {
+        if (err) throw err
+        res.status(201).json({ message: 'add successed' })
+    })
 })
 // update user by id
 userRouter.put('/:id', (req, res) => {
+    id = parseInt(req.params.id)
+    let fullname = req.body.fullname
+    let age = parseInt(req.body.age)
+    let gender = (req.body.gender === "true")
 
-    const index = users.findIndex(user => user.id === parseInt(req.params.id));
-    if (index !== -1) {
-        const updated = { ...users[index], ...req.body }; // tạo user mới đã được cập nhật thông tin
-        users.splice(index, 1, updated); // cập nhật thông tin của user trong mảng
-        res.status(204).json({ msg: 'user updated', updated });
-    }
-    else {
-        res.json({'message':'not found'})
-    }
-
+    connection.query(`update Users set fullname = ?, age = ?, gender = ? where id = ?`, [fullname, age, gender, id], (err, result) => {
+        if (err) {
+            res.json({ message: 'not found' })
+            throw err
+        }
+        res.status(204).json(result)
+    })
 })
 // delete user
 userRouter.delete('/:id', (req, res) => {
-    users = users.filter(user => user.id !== parseInt(req.params.id));
-    res.status(204).res.json({'message':''})
+    id = parseInt(req.params.id)
+    connection.query('delete from Users where id = ?', [id], (err, result) => {
+        if (err) {
+            res.json({ message: 'not found' })
+            throw err
+        }
+        res.status(204).json(result)
+    })
 })
 module.exports = userRouter
