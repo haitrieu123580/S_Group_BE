@@ -16,7 +16,15 @@ connection.query(`CREATE TABLE if not exists Users (
     console.log(result)
 })
 
+connection.query(`alter table Users ADD COLUMN passwordResetToken VARCHAR(255)`, (err, result) =>{
+    console.log(err);
+    console.log(result);
+})
 
+connection.query(`alter table Users ADD COLUMN passwordResetAt DATETIME`, (err, result) =>{
+    console.log(err);
+    console.log(result);
+})
 // var values = [
 //     ['John', 19, true],
 //     ['Peter', 20, true],
