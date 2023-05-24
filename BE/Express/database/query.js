@@ -24,8 +24,17 @@ const create = async ({ db, query, params }) => {
 
   return false;
 };
+
+const updateOne = async ({ db, query, params }) => {
+  const result = await executeQuery({ db, query, params })
+  if ( result.affectedRows > 0) {
+    return true
+  }
+  return false
+}
 module.exports = {
   executeQuery,
   getOne,
   create,
+  updateOne
 }
