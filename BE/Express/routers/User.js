@@ -1,28 +1,15 @@
 const express = require("express")
 const userRouter = express.Router();
-const connection = require('../database/connection')
+const db = require('../database/connection')
 const { verifyToken } = require('./verifyToken')
-const { executeQuery, getOne, create } = require('../database/query')
-// get all users
-userRouter.get('/', (req, res) => {
-    connection.query('select * from Users', (err, result) => {
-        const mappedResult = result.map((row) => {
-            return {
-                ...row,
-                gender: row.gender === 1 ? true : false,
-            };
-        });
-        return res.json(mappedResult);
-    })
+const { executeQuery, getOne, create, updateOne } = require('../database/query')
 
-})
-// get user by id
+//get user by id
 userRouter.get('/:id', verifyToken, async (req, res) => {
     if (req.user.id === parseInt(req.params.id)) {
         const user = await getOne({
-            db: connection,
-            query: `select * from Users where id = ?`,
-            params: [req.user.id]
+            db: db,
+            query: db.select().from('users').where('id','=',req.user.id).first().toQuery()
         })
         return res.status(200).json({ message: user })
     }
@@ -34,11 +21,16 @@ userRouter.get('/:id', verifyToken, async (req, res) => {
 // update user by id
 userRouter.put('/:id', verifyToken, async (req, res) => {
     if (req.user.id === parseInt(req.params.id)) {
-        //same user
-        await executeQuery({
-            db: connection,
-            query: `update Users set name = ?, age = ?, gender = ? where id = ?`,
-            params: [req.body.name, req.body.age, req.body.gender, req.params.id]
+        await updateOne({
+            db: db,
+            query: db('users')
+                    .where('id', req.params.id)
+                    .update({
+                        'name':req.body.name,
+                        'age':req.body.age,
+                        'gender':req.body.gender
+                    })
+                    .toQuery()
         })
         return res.status(200).json({ message: 'update successed' })
     }
@@ -50,9 +42,11 @@ userRouter.put('/:id', verifyToken, async (req, res) => {
 userRouter.delete('/:id', verifyToken, async (req, res) => {
     if (req.user.id === parseInt(req.params.id)) {
         await executeQuery({
-            db: connection,
-            query: `delete from Users where id = ?`,
-            params: [req.params.id]
+            db: db,
+            query: db('users')
+                    .where('id',req.params.id)
+                    .del()
+                    .toQuery()
         })
         return res.status(200).json({ message: 'delete successed' })
     }

@@ -9,6 +9,7 @@ const { mailService } = require('../services/mail.service')
 const db = require('../database/connection')
 const { executeQuery, getOne, create, updateOne } = require('../database/query')
 const { validateRegisterRequest } = require('../middleware/validation')
+const { emit } = require('process')
 authRouter.post('/login', async (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
@@ -16,8 +17,7 @@ authRouter.post('/login', async (req, res) => {
     // Find user in db
     const user = await getOne({
         db: db,
-        query: `select * from users where username = ?`,
-        params: username
+        query: db.select().from('users').where('username', username).toQuery(),
     })
     // Case 1: User does not exist
     if (!user) {
@@ -58,12 +58,10 @@ authRouter.post('/login', async (req, res) => {
 
 //REGISTER
 authRouter.post('/register', validateRegisterRequest, async (req, res) => {
-
     // find username existed 
     const existedUsername = await getOne({
         db: db,
-        query: `select * from users where username = ?`,
-        params: req.body.username
+        query: db.select().from('users').where('username', req.body.username).toQuery(),
     })
     if (!existedUsername) {
         const { salt, ecryptedPassword } = await hashedPassword(req.body.password)
@@ -78,8 +76,7 @@ authRouter.post('/register', validateRegisterRequest, async (req, res) => {
         }
         await create({
             db: db,
-            query: `insert into Users (username, password,email, gender,name, age, salt) values (?,?,?,?,?,?,?)`,
-            params: [user.username, user.password, user.email, user.gender, user.name, user.age, user.salt],
+            query: db.insert(user).into('users').toQuery(),
         })
         return res.status(201).json({ message: 'created new user' })
     }
@@ -92,8 +89,7 @@ authRouter.post('/forgot-password', async (req, res) => {
     // check exist email
     const isExist = await getOne({
         db: db,
-        query: 'select * from Users where email = ?',
-        params: [email]
+        query: db.select().from('users').where('email', email).toQuery()
     })
     if (isExist) {
         const secretKey = crypto.randomBytes(16).toString('hex');
@@ -102,8 +98,13 @@ authRouter.post('/forgot-password', async (req, res) => {
         const passwordResetAt = new Date(Date.now() + 10 * 60 * 1000);
         const updateStatus = await updateOne({
             db,
-            query: 'update Users set passwordResetToken = ?, passwordResetAt = ? where email = ?',
-            params: [passwordResetToken, passwordResetAt, email],
+            query: db('users')
+                .where('email', '=', email)
+                .update({
+                    'passwordResetToken': passwordResetToken,
+                    'passwordResetAt': passwordResetAt,
+                })
+                .toQuery()
         });
         if (updateStatus) {
             await mailService.sendEmail({
@@ -131,16 +132,30 @@ authRouter.post('/reset-password', async function (req, res) {
         const { email, passwordResetToken, newPassword } = req.body;
         const isExist = await getOne({
             db: db,
-            query: 'SELECT * FROM users WHERE email = ? AND passwordResetToken = ? AND passwordResetAt > ?',
-            params: [email, passwordResetToken, new Date()]
+            query: db('users')
+                .select()
+                .from('users')
+                .where({
+                    'email': email,
+                    'passwordResetToken': passwordResetToken
+                })
+                .andWhere('passwordResetAt', '>', new Date())
+                .toQuery()
         })
         if (isExist) {
             const { salt, ecryptedPassword } = await hashedPassword(newPassword)
 
             const updateUser = await updateOne({
                 db: db,
-                query: 'update users set password = ?, salt = ?, passwordResetToken = null, passwordResetAt = null where email = ?',
-                params: [ecryptedPassword, salt, email]
+                query: db('users')
+                    .where('email', email)
+                    .update({
+                        'password': ecryptedPassword,
+                        'salt': salt,
+                        'passwordResetToken': null,
+                        'passwordResetAt': null
+                    })
+                    .toQuery()
             })
             if (updateUser) {
                 return res.status(200).json({
@@ -161,7 +176,7 @@ authRouter.post('/reset-password', async function (req, res) {
         }
     } catch (error) {
         return res.status(500).json({
-            message: 'error',
+            message: 'error'
         });
     }
 });
