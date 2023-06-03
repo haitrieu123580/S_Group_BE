@@ -12,6 +12,17 @@ const verifyToken = (req, res, next) => {
         return res.status(401).json({message:"You are not authenticated!"});
     }
 };
+const verifyTokenAndAuthorization = async (req, res, next)=>{
+    await verifyToken(req, res, () =>{
+        if(req.user.id === parseInt( req.params.id)|| req.user.isAdmin){
+            next()
+        }
+        else{
+            return res.status(403).json('You are not allowed!')
+        }
+    }) 
+}
 module.exports = {
     verifyToken,
+    verifyTokenAndAuthorization,
 };
