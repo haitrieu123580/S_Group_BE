@@ -35,25 +35,25 @@ userRouter.get('/getusers', async (req, res) => {
     let page_size = req.query.page_size || 10; // Kích thước trang mặc định là 10 nếu không được cung cấp
     let page_index = req.query.page_index || 1; // Trang hiện tại mặc định là 1 nếu không được cung cấp
     let age = req.query.age || null; // Giá trị tuổi tìm kiếm, mặc định là null nếu không được cung cấp
-  
+
     let query = knex.select("id", "name", "age").from("users");
-    
+
     // Tìm kiếm theo tuổi nếu giá trị tuổi được cung cấp
     if (age) {
-      query = query.where("age", age);
+        query = query.where("age", age);
     }
-  
+
     // Đếm tổng số bản ghi
     let countQuery = knex.count("* as count").from("users").first();
     let countResult = await countQuery;
-  
+
     let count = countResult.count;
     let offset = (page_index - 1) * page_size;
-  
+
     // Lấy dữ liệu người dùng với phân trang và tìm kiếm theo tuổi
     let dataQuery = query.offset(offset).limit(page_size);
     let dataResult = await dataQuery;
-  
+
     let rows = dataResult;
     let pagination = {};
     pagination.total = count;
@@ -65,12 +65,12 @@ userRouter.get('/getusers', async (req, res) => {
     pagination.from = offset;
     pagination.data = rows;
     res.status(200).json({ message: pagination });
-  });
-  
+});
+
 //get user by id
 userRouter.get('/:id', verifyTokenAndAuthorization, async (req, res) => {
     const user = await knex.select().from('users').where('id', '=', req.user.id).first()
-        return res.status(200).json({ message: user })
+    return res.status(200).json({ message: user })
 })
 
 // update user by id
