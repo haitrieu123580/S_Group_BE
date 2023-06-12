@@ -1,9 +1,9 @@
 const express = require("express")
-const voteRouter = express.Router();
+const pollRouter = express.Router();
 const knex = require('../database/connection')
 const { verifyToken, verifyTokenAndAuthorization } = require('./verifyToken')
 // create poll & option
-voteRouter.post('/create-vote', [verifyToken], async (req, res) => {
+pollRouter.post('/create-poll', [verifyToken], async (req, res) => {
   try {
     await knex.transaction(async (trx) => {
       const [pollId] = await trx('polls').insert({
@@ -26,7 +26,7 @@ voteRouter.post('/create-vote', [verifyToken], async (req, res) => {
 
 })
 // update poll 
-voteRouter.put('/update-vote/poll/:pollId', [verifyToken], async (req, res) => {
+pollRouter.put('/update-poll/poll/:pollId', [verifyToken], async (req, res) => {
   console.log(req.header);
   const poll = {
     name: req.body.name,
@@ -49,7 +49,7 @@ voteRouter.put('/update-vote/poll/:pollId', [verifyToken], async (req, res) => {
     })
 
 })
-voteRouter.put('/update-vote/options/optionId', async (req, res) => {
+pollRouter.put('/update-poll/options/optionId', async (req, res) => {
   const option = {
     title: req.body.title
   }
@@ -70,7 +70,7 @@ voteRouter.put('/update-vote/options/optionId', async (req, res) => {
     })
 })
 // delete 
-voteRouter.delete('/delete-vote/:pollId', [verifyToken], async (req, res) => {
+pollRouter.delete('/delete-poll/:pollId', [verifyToken], async (req, res) => {
   if (req.user.isAdmin) {
     await knex('polls')
       .where('id', req.params.pollId)
@@ -94,7 +94,7 @@ voteRouter.delete('/delete-vote/:pollId', [verifyToken], async (req, res) => {
   }
 })
 // read poll
-voteRouter.get('/get-vote/:pollId', [verifyToken], async (req, res) => {
+pollRouter.get('/get-poll/:pollId', [verifyToken], async (req, res) => {
   knex('polls')
     .select('polls.name', 'polls.question', 'options.title as option_title', 'users.id as user_id', 'users.name as user_name')
     .leftJoin('options', 'polls.id', 'options.pollId')
