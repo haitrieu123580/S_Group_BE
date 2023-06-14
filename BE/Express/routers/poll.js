@@ -27,7 +27,6 @@ pollRouter.post('/create-poll', [verifyToken], async (req, res) => {
 })
 // update poll 
 pollRouter.put('/update-poll/poll/:pollId', [verifyToken], async (req, res) => {
-  console.log(req.header);
   const poll = {
     name: req.body.name,
     question: req.body.question
@@ -44,7 +43,6 @@ pollRouter.put('/update-poll/poll/:pollId', [verifyToken], async (req, res) => {
       }
     })
     .catch((err) => {
-      console.log(err);
       return res.status(400).json({ message: 'something wrong!' })
     })
 
@@ -65,7 +63,6 @@ pollRouter.put('/update-poll/options/optionId', async (req, res) => {
       }
     })
     .catch((err) => {
-      console.log(err);
       return res.status.apply(400).json({ message: 'something wrong!' })
     })
 })
@@ -111,7 +108,6 @@ pollRouter.get('/get-poll/:pollId', [verifyToken], async (req, res) => {
 
         results.forEach((row) => {
           if (row.option_title) {
-            console.log(row);
             pollInfo.options.push({
               title: row.option_title,
               users: row.user_id ? [{ id: row.user_id, name: row.user_name }] : [],
@@ -133,4 +129,53 @@ pollRouter.get('/get-poll/:pollId', [verifyToken], async (req, res) => {
       console.error('Error retrieving poll information:', error);
     })
 })
-module.exports = voteRouter
+//submit-unsubmit
+pollRouter.get('/submit-vote/:optionId', [verifyToken], async (req, res) => {
+  // find exist submit
+  knex('options_users')
+    .select('*')
+    .where({
+      optionId: req.params.optionId,
+      userId: req.user.id
+    })
+    .then((result) => {
+      if (result.length==0) {
+        // insert new submit
+        knex('options_users')
+          .insert({
+            optionId: req.params.optionId,
+            userId: req.user.id
+          })
+          .then((result) => {
+            if (result) {
+              return res.status(200).json({ message: 'Submit Success' })
+            }
+            else {
+              return res.json({ message: 'Something wrong when submit' })
+            }
+          })
+      }
+      else{
+        // unsubmit
+        knex('options_users')
+        .where({
+          optionId: req.params.optionId,
+          userId: req.user.id
+        })
+        .del()
+        .then((deletedRow)=>{
+          if(deletedRow>0){
+            return res.status(200).json({message: 'Unsubmit success'})
+          }
+          else{
+            return res.json({message: 'Something wrong when unsubmit'})
+          }
+        } )
+      }
+    })
+    .catch((err) =>{
+      return res.json({message: 'Something wrong'})
+    })
+
+})
+module.exports = pollRouter
