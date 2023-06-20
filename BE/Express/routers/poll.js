@@ -47,12 +47,12 @@ pollRouter.put('/update-poll/poll/:pollId', [verifyToken], async (req, res) => {
     })
 
 })
-pollRouter.put('/update-poll/options/optionId', async (req, res) => {
+pollRouter.put('/update-poll/options/:optionId', async (req, res) => {
   const option = {
     title: req.body.title
   }
   knex('options')
-    .where('id', req.body.optionId)
+    .where('id', req.params.optionId)
     .update(option)
     .then((result) => {
       if (result) {
@@ -65,6 +65,35 @@ pollRouter.put('/update-poll/options/optionId', async (req, res) => {
     .catch((err) => {
       return res.status.apply(400).json({ message: 'something wrong!' })
     })
+})
+//add-options
+pollRouter.post('/update-poll/add-options/:pollId',[verifyToken], async (req, res) =>{
+  const optionsWithPollId = req.body.options.map((option) => {
+    return { ...option, pollId: req.params.pollId };
+  });
+  knex('options')
+  .insert(optionsWithPollId)
+  .then((result) =>{
+    console.log(result);
+    if(result){
+        return res.status(200).json('Option added')
+    }
+  })
+})
+//remove-option
+pollRouter.delete('/update-poll/delete-option/:optionId', [verifyToken],async (req, res) =>{
+  knex('options')
+  .where('id', req.params.optionId)
+  .del()
+  .then((result) =>{
+    console.log(result);
+    if(result) {
+      return res.status(200).json({message: 'deleted option'})
+    }
+    else{
+      return res.json({message:'Something wrong when detele option'})
+    }
+  })
 })
 // delete 
 pollRouter.delete('/delete-poll/:pollId', [verifyToken], async (req, res) => {
