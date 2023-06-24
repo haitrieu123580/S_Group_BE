@@ -1,7 +1,7 @@
 const express = require("express")
 const userRouter = express.Router();
 const knex = require('../database/connection')
-const { verifyToken, verifyTokenAndAuthorization } = require('./verifyToken')
+const { verifyToken, verifyTokenAndAuthorization } = require('../middleware/verifyToken')
 const { executeQuery, getOne, create, updateOne } = require('../database/query')
 const { hashedPassword, comparePassword } = require('../hash/hash');
 const { validateRegisterRequest } = require("../middleware/validation");

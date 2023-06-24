@@ -1,7 +1,7 @@
 const express = require("express")
 const pollRouter = express.Router();
 const knex = require('../database/connection')
-const { verifyToken, verifyTokenAndAuthorization } = require('./verifyToken')
+const { verifyToken, verifyTokenAndAuthorization } = require('../middleware/verifyToken')
 // create poll & option
 pollRouter.post('/create-poll', [verifyToken], async (req, res) => {
   try {
