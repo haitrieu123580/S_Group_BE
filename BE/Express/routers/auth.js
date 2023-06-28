@@ -8,6 +8,9 @@ const crypto = require('crypto')
 const { mailService } = require('../services/mail.service')
 const knex = require('../database/connection')
 const { validateRegisterRequest } = require('../middleware/validation')
+const { cacheService } = require('../services/cache.service')
+const { canAccessBy } = require('../middleware/verifyRoles')
+const Permission = require('../config/allowPermission')
 authRouter.post('/login', async (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
@@ -26,6 +29,7 @@ authRouter.post('/login', async (req, res) => {
         salt: user.salt,
     });
     if (isPasswordMatch) {
+        await cacheService.setOneUser(user.id);
         data = {
             id: user.id,
             username: user.username,
@@ -48,7 +52,13 @@ authRouter.post('/login', async (req, res) => {
         });
     }
 });
-
+// authRouter.get(
+//     '/authorization-test',canAccessBy(Permission.CreateUser, Permission.ReadUser), async function (req, res) {
+//         return res.status(200).json({
+//             message: 'test authorization successfully',
+//         });
+//     }
+// );
 
 //REGISTER
 authRouter.post('/register', validateRegisterRequest, async (req, res) => {
@@ -82,11 +92,11 @@ authRouter.post('/forgot-password', async (req, res) => {
 
         const passwordResetAt = new Date(Date.now() + 10 * 60 * 1000);
         const updateStatus = await knex('users')
-        .where('email', '=', email)
-        .update({
-            'passwordResetToken': passwordResetToken,
-            'passwordResetAt': passwordResetAt,
-        })
+            .where('email', '=', email)
+            .update({
+                'passwordResetToken': passwordResetToken,
+                'passwordResetAt': passwordResetAt,
+            })
         if (updateStatus) {
             await mailService.sendEmail({
                 emailFrom: 'admin@gmail.com',
@@ -111,23 +121,23 @@ authRouter.post('/reset-password', async function (req, res) {
     try {
         const { email, passwordResetToken, newPassword } = req.body;
         const isExist = await knex('users')
-                .select()
-                .from('users')
-                .where({
-                    'email': email,
-                    'passwordResetToken': passwordResetToken
-                })
-                .andWhere('passwordResetAt', '>', new Date()).first()
+            .select()
+            .from('users')
+            .where({
+                'email': email,
+                'passwordResetToken': passwordResetToken
+            })
+            .andWhere('passwordResetAt', '>', new Date()).first()
         if (isExist) {
             const { salt, ecryptedPassword } = await hashedPassword(newPassword)
             const updateUser = await knex('users')
-                    .where('email', email)
-                    .update({
-                        'password': ecryptedPassword,
-                        'salt': salt,
-                        'passwordResetToken': null,
-                        'passwordResetAt': null
-                    })
+                .where('email', email)
+                .update({
+                    'password': ecryptedPassword,
+                    'salt': salt,
+                    'passwordResetToken': null,
+                    'passwordResetAt': null
+                })
             if (updateUser) {
                 return res.status(200).json({
                     message: 'reset password successfully',
@@ -151,5 +161,6 @@ authRouter.post('/reset-password', async function (req, res) {
         });
     }
 });
+
 
 module.exports = authRouter
