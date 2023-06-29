@@ -2,13 +2,13 @@ const express = require("express")
 const userRouter = express.Router();
 const knex = require('../database/connection')
 const { verifyToken, verifyTokenAndAuthorization } = require('../middleware/verifyToken')
-const { executeQuery, getOne, create, updateOne } = require('../database/query')
 const { hashedPassword, comparePassword } = require('../hash/hash');
 const { validateRegisterRequest } = require("../middleware/validation");
-
+const { canAccessBy } = require("../middleware/verifyRoles");
+const Permission = require('../config/allowPermission');
 // create new user by admin
-userRouter.post('/createUser', [verifyToken, validateRegisterRequest], async (req, res) => {
-    if (req.user.isAdmin) {
+userRouter.post('/create-user', [verifyToken, validateRegisterRequest,
+    canAccessBy(Permission.CreateUser)], async (req, res) => {
         const existedUsername = await knex.select().from('users').where('username', req.body.username).first()
         if (!existedUsername) {
             const { salt, ecryptedPassword } = await hashedPassword(req.body.password)
@@ -26,11 +26,8 @@ userRouter.post('/createUser', [verifyToken, validateRegisterRequest], async (re
             return res.status(201).json({ message: 'created new user' })
         }
         return res.status(200).json({ message: 'username already existed' })
-    }
-    else {
-        return res.json({ message: 'not allowed' })
-    }
-})
+
+    })
 userRouter.get('/getusers', async (req, res) => {
     let page_size = req.query.page_size || 10; // Kích thước trang mặc định là 10 nếu không được cung cấp
     let page_index = req.query.page_index || 1; // Trang hiện tại mặc định là 1 nếu không được cung cấp
@@ -74,7 +71,7 @@ userRouter.get('/:id', verifyTokenAndAuthorization, async (req, res) => {
 })
 
 // update user by id
-userRouter.put('/:id', verifyTokenAndAuthorization, async (req, res) => {
+userRouter.put('/:id', [verifyTokenAndAuthorization, canAccessBy(Permission.UpdateUser)], async (req, res) => {
     await knex('users')
         .where('id', req.params.id)
         .update({
@@ -85,11 +82,11 @@ userRouter.put('/:id', verifyTokenAndAuthorization, async (req, res) => {
     return res.status(200).json({ message: 'update successed' })
 })
 // delete user
-userRouter.delete('/:id', verifyTokenAndAuthorization, async (req, res) => {
+userRouter.delete('/:id', [verifyTokenAndAuthorization, canAccessBy(Permission.DeleteUser)], async (req, res) => {
     await knex('users')
         .where('id', req.params.id)
         .del()
     return res.status(200).json({ message: 'delete successed' })
 })
-
+// set permission
 module.exports = userRouter

@@ -67,33 +67,33 @@ pollRouter.put('/update-poll/options/:optionId', async (req, res) => {
     })
 })
 //add-options
-pollRouter.post('/update-poll/add-options/:pollId',[verifyToken], async (req, res) =>{
+pollRouter.post('/update-poll/add-options/:pollId', [verifyToken], async (req, res) => {
   const optionsWithPollId = req.body.options.map((option) => {
     return { ...option, pollId: req.params.pollId };
   });
   knex('options')
-  .insert(optionsWithPollId)
-  .then((result) =>{
-    console.log(result);
-    if(result){
+    .insert(optionsWithPollId)
+    .then((result) => {
+      console.log(result);
+      if (result) {
         return res.status(200).json('Option added')
-    }
-  })
+      }
+    })
 })
 //remove-option
-pollRouter.delete('/update-poll/delete-option/:optionId', [verifyToken],async (req, res) =>{
+pollRouter.delete('/update-poll/delete-option/:optionId', [verifyToken], async (req, res) => {
   knex('options')
-  .where('id', req.params.optionId)
-  .del()
-  .then((result) =>{
-    console.log(result);
-    if(result) {
-      return res.status(200).json({message: 'deleted option'})
-    }
-    else{
-      return res.json({message:'Something wrong when detele option'})
-    }
-  })
+    .where('id', req.params.optionId)
+    .del()
+    .then((result) => {
+      console.log(result);
+      if (result) {
+        return res.status(200).json({ message: 'deleted option' })
+      }
+      else {
+        return res.json({ message: 'Something wrong when detele option' })
+      }
+    })
 })
 // delete 
 pollRouter.delete('/delete-poll/:pollId', [verifyToken], async (req, res) => {
@@ -168,7 +168,7 @@ pollRouter.get('/submit-vote/:optionId', [verifyToken], async (req, res) => {
       userId: req.user.id
     })
     .then((result) => {
-      if (result.length==0) {
+      if (result.length == 0) {
         // insert new submit
         knex('options_users')
           .insert({
@@ -184,26 +184,26 @@ pollRouter.get('/submit-vote/:optionId', [verifyToken], async (req, res) => {
             }
           })
       }
-      else{
+      else {
         // unsubmit
         knex('options_users')
-        .where({
-          optionId: req.params.optionId,
-          userId: req.user.id
-        })
-        .del()
-        .then((deletedRow)=>{
-          if(deletedRow>0){
-            return res.status(200).json({message: 'Unsubmit success'})
-          }
-          else{
-            return res.json({message: 'Something wrong when unsubmit'})
-          }
-        } )
+          .where({
+            optionId: req.params.optionId,
+            userId: req.user.id
+          })
+          .del()
+          .then((deletedRow) => {
+            if (deletedRow > 0) {
+              return res.status(200).json({ message: 'Unsubmit success' })
+            }
+            else {
+              return res.json({ message: 'Something wrong when unsubmit' })
+            }
+          })
       }
     })
-    .catch((err) =>{
-      return res.json({message: 'Something wrong'})
+    .catch((err) => {
+      return res.json({ message: 'Something wrong' })
     })
 
 })
