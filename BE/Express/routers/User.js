@@ -74,6 +74,7 @@ userRouter.get('/:id', verifyTokenAndAuthorization, async (req, res) => {
 userRouter.put('/:id', [verifyTokenAndAuthorization, canAccessBy(Permission.UpdateUser)], async (req, res) => {
     await knex('users')
         .where('id', req.params.id)
+        .first()
         .update({
             'name': req.body.name,
             'age': req.body.age,
@@ -85,8 +86,32 @@ userRouter.put('/:id', [verifyTokenAndAuthorization, canAccessBy(Permission.Upda
 userRouter.delete('/:id', [verifyTokenAndAuthorization, canAccessBy(Permission.DeleteUser)], async (req, res) => {
     await knex('users')
         .where('id', req.params.id)
+        .first()
         .del()
     return res.status(200).json({ message: 'delete successed' })
 })
-// set permission
+// ASSIGN ROLE TO USER
+userRouter.post('/assign-role/:userId', async (req, res) => {
+    try {
+        const userId = parseInt(req.params.userId)
+        const { roles } = req.body;
+        // find existed role
+        const user = knex('users').select().where('id', userId).first()
+        if (!user) {
+            return res.status(404).json({ message: 'user not found' })
+        }
+        const roleWithUserId = roles.map((x) => {
+            // console.log(x);
+            return { userId: userId, roleId: parseInt(x) }
+        })
+        await knex('users_roles')
+            .insert(roleWithUserId)
+        return res.status(201).json({ message: 'assigned roles' })
+    } catch (error) {
+        console.log(error);
+        return res.status(400).json({
+            message: 'Something wrong when assigning new role',
+        });
+    }
+})
 module.exports = userRouter

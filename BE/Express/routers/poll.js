@@ -86,7 +86,7 @@ pollRouter.delete('/update-poll/delete-option/:optionId', [verifyToken], async (
     .where('id', req.params.optionId)
     .del()
     .then((result) => {
-      console.log(result);
+      // console.log(result);
       if (result) {
         return res.status(200).json({ message: 'deleted option' })
       }
