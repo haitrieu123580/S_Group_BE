@@ -5,7 +5,7 @@ const { verifyToken, verifyTokenAndAuthorization } = require('../middleware/veri
 const { hashedPassword, comparePassword } = require('../hash/hash');
 const { validateRegisterRequest } = require("../middleware/validation");
 const { canAccessBy } = require("../middleware/verifyRoles");
-const Permission = require('../config/allowPermission');
+const Permission = require('../utils/allowPermission');
 // create new user by admin
 userRouter.post('/create-user', [verifyToken, validateRegisterRequest,
     canAccessBy(Permission.CreateUser)], async (req, res) => {
@@ -91,7 +91,7 @@ userRouter.delete('/:id', [verifyTokenAndAuthorization, canAccessBy(Permission.D
     return res.status(200).json({ message: 'delete successed' })
 })
 // ASSIGN ROLE TO USER
-userRouter.post('/assign-role/:userId', async (req, res) => {
+userRouter.post('/assign-role/:userId',canAccessBy(Permission.SetRole), async (req, res) => {
     try {
         const userId = parseInt(req.params.userId)
         const { roles } = req.body;

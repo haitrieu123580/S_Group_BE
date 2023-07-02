@@ -1,7 +1,9 @@
 const router = require('express').Router()
-const knex = require('../database/connection')
+const knex = require('../database/connection');
+const { canAccessBy } = require('../middleware/verifyRoles');
+const Permission = require('../utils/allowPermission');
 // CREATE NEW PERMISSION
-router.post('/create-permission', async (req, res) => {
+router.post('/create-permission', canAccessBy(Permission.CreatePermission), async (req, res) => {
     try {
         const permission = req.body.name;
         const result = await knex('permissions').insert({ name: permission })
@@ -21,7 +23,7 @@ router.post('/create-permission', async (req, res) => {
     }
 })
 // UPDATE PERMISSION
-router.put('/update-permission/:permissionId', async (req, res) => {
+router.put('/update-permission/:permissionId',canAccessBy(Permission.UpdatePermission), async (req, res) => {
     try {
         const role = await knex('permissions').where('id', parseInt(req.params.permissionId)).first();
         if (!role) {
@@ -49,7 +51,7 @@ router.get('/', async (req, res) => {
     }
 })
 // DELETE PERMISSION
-router.delete('/delete-permission/:permissionId', async (req, res) => {
+router.delete('/delete-permission/:permissionId',canAccessBy(Permission.DeletePermission), async (req, res) => {
     try {
         const perrmission = await knex('permissions')
             .where('id', parseInt(req.params.permissionId))

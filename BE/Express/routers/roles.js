@@ -1,8 +1,10 @@
-const knex = require('../database/connection')
+const knex = require('../database/connection');
+const { canAccessBy } = require('../middleware/verifyRoles');
+const Permission = require('../utils/allowPermission')
 const roleRouter = require('express').Router()
 
 // CREATE NEW ROLE
-roleRouter.post('/create-role', async (req, res) => {
+roleRouter.post('/create-role',canAccessBy(Permission.CreateRole), async (req, res) => {
     try {
         const roleName = req.body.roleName;
         const result = await knex('roles').insert({ name: roleName })
@@ -22,7 +24,7 @@ roleRouter.post('/create-role', async (req, res) => {
     }
 })
 // UPDATE ROLE
-roleRouter.put('/update-role/:roleId', async (req, res) => {
+roleRouter.put('/update-role/:roleId',canAccessBy(Permission.UpdateRole), async (req, res) => {
     try {
         const role = await knex('roles').where('id', parseInt(req.params.roleId)).first();
         if (!role) {
@@ -42,7 +44,7 @@ roleRouter.put('/update-role/:roleId', async (req, res) => {
 })
 
 // DELETE ROLE
-roleRouter.delete('/delete-role/:roleId', async (req, res) => {
+roleRouter.delete('/delete-role/:roleId',canAccessBy(Permission.DeletePermission), async (req, res) => {
     try {
         knex('roles')
             .where('id', parseInt(req.params.roleId)).first()
@@ -61,7 +63,7 @@ roleRouter.delete('/delete-role/:roleId', async (req, res) => {
     }
 })
 // ASSIGN PERMISSION TO ROLE
-roleRouter.post('/assign-permission/:roleId', async (req, res) => {
+roleRouter.post('/assign-permission/:roleId',canAccessBy(Permission.SetPermission), async (req, res) => {
     try {
         const roleId = parseInt(req.params.roleId)
         const { permissions } = req.body;
@@ -76,6 +78,7 @@ roleRouter.post('/assign-permission/:roleId', async (req, res) => {
         })
         await knex('roles_permissions')
             .insert(permissionWithRoleId)
+        // !? updating cache service
         return res.status(201).json({ message: 'assigned perrmission' })
     } catch (error) {
         console.log(error);

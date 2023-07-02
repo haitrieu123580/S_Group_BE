@@ -9,8 +9,7 @@ const { mailService } = require('../services/mail.service')
 const knex = require('../database/connection')
 const { validateRegisterRequest } = require('../middleware/validation')
 const { cacheService } = require('../services/cache.service')
-// const { canAccessBy } = require('../middleware/verifyRoles')
-// const Permission = require('../config/allowPermission')
+
 authRouter.post('/login', async (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
@@ -52,13 +51,6 @@ authRouter.post('/login', async (req, res) => {
         });
     }
 });
-// authRouter.get(
-//     '/authorization-test',canAccessBy(Permission.CreateUser, Permission.ReadUser), async function (req, res) {
-//         return res.status(200).json({
-//             message: 'test authorization successfully',
-//         });
-//     }
-// );
 
 //REGISTER
 authRouter.post('/register', validateRegisterRequest, async (req, res) => {

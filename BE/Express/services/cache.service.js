@@ -16,7 +16,7 @@ const cacheService = {
       new Set(rolePermissions.filter((item) => item.permission != null).map((item) => item.permission))
     );
     const userCache = expireCache.namespace('userCache');
-    userCache(`${userId}`, { roles, permissions }, process.env.JWT_EXPIRE_TIME);
+    userCache(`${userId}`, { roles, permissions }, process.env.JWT_EXPIRE_TIME)
   },
   async getOneUser(userId) {
     const userCache = expireCache.namespace('userCache');
