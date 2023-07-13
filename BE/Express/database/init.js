@@ -41,7 +41,6 @@ connection.query(`CREATE TABLE if not exists options (
     title varchar(255) DEFAULT NULL,
     pollId int NOT NULL,
     PRIMARY KEY (id),
-    UNIQUE KEY title_UNIQUE (title),
     KEY pollId (pollId),
     CONSTRAINT pollId FOREIGN KEY (pollId) REFERENCES polls (id) ON DELETE CASCADE
     )`, (err, result) => {
@@ -57,6 +56,15 @@ connection.query(`CREATE TABLE if not exists options_users (
     KEY optionId_idx (optionId),
     CONSTRAINT optionId FOREIGN KEY (optionId) REFERENCES options (id) ON DELETE CASCADE,
     CONSTRAINT userId FOREIGN KEY (userId) REFERENCES users (id) ON DELETE CASCADE
+    )`, (err, result) => {
+    console.log(err)
+    console.log(result)
+})
+
+connection.query(`CREATE TABLE if not exists roles (
+    id int NOT NULL AUTO_INCREMENT,
+    name varchar(255) NOT NULL,
+    PRIMARY KEY (id),
     )`, (err, result) => {
     console.log(err)
     console.log(result)
