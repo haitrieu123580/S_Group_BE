@@ -15,15 +15,4 @@ const Role = sequelize.define('roles', {
     tableName: 'roles',
     timestamps: false
   });
-sequelize.sync().then(() => {
-
-    Role.findAll().then(res => {
-        console.log(res)
-    }).catch((error) => {
-        console.error('Failed to retrieve data : ', error);
-    });
-
-}).catch((error) => {
-    console.error('Unable to create table : ', error);
-});
 module.exports = Role

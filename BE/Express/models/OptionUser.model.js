@@ -1,43 +1,33 @@
-const { Sequelize, DataTypes, literal} = require("sequelize");
+const { Sequelize, DataTypes, literal } = require("sequelize");
 const sequelize = require('../database/sequelize')
 const OptionUser = sequelize.define('OptionUser', {
-    id: {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-      primaryKey: true,
-      autoIncrement: true
+  id: {
+    type: Sequelize.INTEGER,
+    allowNull: false,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  optionId: {
+    type: Sequelize.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'Options',
+      key: 'id'
     },
-    optionId: {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Options',
-        key: 'id'
-      },
-      onDelete: 'CASCADE'
+    onDelete: 'CASCADE'
+  },
+  userId: {
+    type: Sequelize.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'Users',
+      key: 'id'
     },
-    userId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'Users',
-          key: 'id'
-        },
-        onDelete: 'CASCADE'
-      }
-  },{
-    tableName: 'options_users',
-    timestamps: false
-  });
-// sequelize.sync().then(() => {
+    onDelete: 'CASCADE'
+  }
+}, {
+  tableName: 'options_users',
+  timestamps: false
+});
 
-//     OptionUser.findAll().then(res => {
-//         console.log(res)
-//     }).catch((error) => {
-//         console.error('Failed to retrieve data : ', error);
-//     });
-
-// }).catch((error) => {
-//     console.error('Unable to create table : ', error);
-// });
 module.exports = OptionUser

@@ -1,216 +1,228 @@
 const knex = require('../database/connection')
+const Poll = require('../models/Poll.model')
+const Option = require('../models/Option.model')
+const OptionUser = require('../models/OptionUser.model')
+const User = require('../models/User.model')
+const sequelize = require('../database/sequelize')
+const { Op } = require('sequelize')
 // create poll & option
-const createPoll =  async (req, res) => {
+const createPoll = async (req, res) => {
   try {
-    await knex.transaction(async (trx) => {
-      const [pollId] = await trx('polls').insert({
+    await sequelize.transaction(async (transaction) => {
+      const poll = await Poll.create({
         name: req.body.name,
         question: req.body.question,
         createdBy: req.user.id
-      });
-      const optionsWithPollId = req.body.options.map((option) => {
-        return { ...option, pollId: pollId };
+      }, { transaction });
+
+      const options = req.body.options.map((option) => {
+        return { ...option, pollId: poll.id };
       });
 
-      await trx('options').insert(optionsWithPollId);
+      await Option.bulkCreate(options, { transaction });
     });
-    return res.status(200).json({ message: 'created!' })
+
+    return res.status(200).json({ message: 'created!' });
   } catch (error) {
-    console.error('Đã xảy ra lỗi khi tạo hàng:', error);
+    console.error(error);
+    return res.status(500).json({ message: 'error when creating new poll' })
   } finally {
-    await knex.destroy();
+    await sequelize.close();
   }
 
 }
 // update poll 
-updatePoll =  async (req, res) => {
+updatePoll = async (req, res) => {
   const poll = {
     name: req.body.name,
     question: req.body.question
   }
-  knex('polls')
-    .where('id', req.params.pollId)
-    .update(poll)
-    .then((results) => {
-      if (results) {
-        return res.status(200).json({ message: 'update successed' })
+  try {
+    await Poll.update(
+      poll,
+      {
+        where:
+        {
+          id: req.params.pollId
+        }
       }
-      else {
-        return res.status(200).json({ message: 'poll not found' })
-      }
-    })
-    .catch((err) => {
-      return res.status(400).json({ message: 'something wrong!' })
-    })
+    );
+    return res.status(200).json({ message: 'Updated poll' })
 
+  } catch (error) {
+    return res.json({ message: 'error when updating poll' })
+  }
 }
 updateOption = async (req, res) => {
   const option = {
     title: req.body.title
   }
-  knex('options')
-    .where('id', req.params.optionId)
-    .update(option)
-    .then((result) => {
-      if (result) {
-        return res.status(200).json({ message: 'update successed' })
-      }
-      else {
-        return res.status(400).json({ message: 'option not found' })
-      }
-    })
-    .catch((err) => {
-      return res.status.apply(400).json({ message: 'something wrong!' })
-    })
+  try {
+    const [numRowsUpdated, updatedOptions] = await Option.update(option, {
+      where: { id: optionId },
+      returning: true, // Trả về dữ liệu sau khi cập nhật
+    });
+
+    if (numRowsUpdated > 0) {
+      return res.status(200).json({ message: 'update succeeded', updatedOptions });
+    } else {
+      return res.status(400).json({ message: 'option not found' });
+    }
+  } catch (err) {
+    return res.status(500).json({ message: 'something wrong!' });
+  }
+
 }
 //add-options
-const addOption =  async (req, res) => {
+const addOption = async (req, res) => {
   const optionsWithPollId = req.body.options.map((option) => {
     return { ...option, pollId: req.params.pollId };
   });
-  knex('options')
-    .insert(optionsWithPollId)
-    .then((result) => {
-    //   console.log(result);
-      if (result) {
-        return res.status(200).json('Option added')
-      }
-    })
+  try {
+    const result = await Option.bulkCreate(optionsWithPollId);
+
+    if (result) {
+      return res.status(200).json('Option added');
+    }
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Something went wrong!' });
+  }
 }
 //remove-option
-const deleteOption =  async (req, res) => {
-  knex('options')
-    .where('id', req.params.optionId)
-    .del()
-    .then((result) => {
-      // console.log(result);
-      if (result) {
-        return res.status(200).json({ message: 'deleted option' })
-      }
-      else {
-        return res.json({ message: 'Something wrong when detele option' })
-      }
-    })
+const deleteOption = async (req, res) => {
+  try {
+    const result = await Option.destroy({
+      where: { id: req.params.optionId },
+    });
+
+    if (result) {
+      return res.status(200).json({ message: 'deleted option' });
+    } else {
+      return res.json({ message: 'Option not found' });
+    }
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Something went wrong when delete option' });
+  }
 }
 // delete 
-const deletePoll =  async (req, res) => {
-  if (req.user.isAdmin) {
-    await knex('polls')
-      .where('id', req.params.pollId)
-      .del()
-    return res.status(200).json({ message: 'delete successed' })
-  }
-  else {
-    knex('polls')
-      .where({ id: req.params.pollId, createdBy: req.user.id })
-      .del()
-      .then((deletedCount) => {
-        if (deletedCount > 0) {
-          return res.status(200).json({ message: 'Poll deleted successfully.' });
-        } else {
-          return res.status(200).json({ message: 'Poll not found for the provided poll ID and user ID.' });
-        }
-      })
-      .catch((error) => {
-        console.error('Error deleting poll:', error);
-      })
+const deletePoll = async (req, res) => {
+
+  try {
+    const result = await Option.destroy({
+      where: { id: req.params.pollId },
+    });
+
+    if (result) {
+      return res.status(200).json({ message: 'deleted poll' });
+    } else {
+      return res.json({ message: 'Poll not found' });
+    }
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Something went wrong when delete poll' });
   }
 }
 // read poll
-const getPoll =  async (req, res) => {
-  knex('polls')
-    .select('polls.name', 'polls.question', 'options.title as option_title', 'users.id as user_id', 'users.name as user_name')
-    .leftJoin('options', 'polls.id', 'options.pollId')
-    .leftJoin('options_users', 'options.id', 'options_users.optionId')
-    .leftJoin('users', 'options_users.userId', 'users.id')
-    .where('polls.id', req.params.pollId)
-    .then((results) => {
-      if (results.length !== 0) {
-        const pollInfo = {
-          name: results[0].name,
-          question: results[0].question,
-          options: [],
-        };
+const getPoll = async (req, res) => {
+  try {
+    const results = await Poll.findAll({
+      where: { id: req.params.pollId },
+      attributes: ['name', 'question'],
+      include: [
+        {
+          model: Option,
+          attributes: ['title'],
+          include: [
+            {
+              model: User,
+              attributes: ['id', 'name'],
+              through: { attributes: [] }, // Loại bỏ các trường không cần thiết từ bảng trung gian
+            },
+          ],
+        },
+      ],
+    });
 
-        results.forEach((row) => {
-          if (row.option_title) {
-            pollInfo.options.push({
-              title: row.option_title,
-              users: row.user_id ? [{ id: row.user_id, name: row.user_name }] : [],
-            });
-          } else if (row.user_id) {
-            const option = pollInfo.options[pollInfo.options.length - 1];
-            option.users.push({ id: row.user_id, name: row.user_name });
-          }
-        });
+    if (results.length !== 0) {
+      const pollInfo = {
+        name: results[0].name,
+        question: results[0].question,
+        options: results[0].options.map(option => {
+          return {
+            title: option.title,
+            users: option.Users.map(user => ({ id: user.id, name: user.name })),
+          };
+        }),
+      };
 
-        return res.json({ 'Poll Information': pollInfo });
-      }
-      else {
-        return res.json({ message: 'Poll not found!' })
-      }
-
-    })
-    .catch((error) => {
-      console.error('Error retrieving poll information:', error);
-    })
+      return res.json({ 'Poll Information': pollInfo });
+    } else {
+      return res.json({ message: 'Poll not found!' });
+    }
+  } catch (error) {
+    console.error('Error retrieving poll information:', error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
 }
-//submit-unsubmit
-const submitUnsubmit = async (req, res) => {
-  // find exist submit
-  knex('options_users')
-    .select('*')
-    .where({
-      optionId: req.params.optionId,
-      userId: req.user.id
-    })
-    .then((result) => {
-      if (result.length == 0) {
-        // insert new submit
-        knex('options_users')
-          .insert({
-            optionId: req.params.optionId,
-            userId: req.user.id
-          })
-          .then((result) => {
-            if (result) {
-              return res.status(200).json({ message: 'Submit Success' })
-            }
-            else {
-              return res.json({ message: 'Something wrong when submit' })
-            }
-          })
-      }
-      else {
-        // unsubmit
-        knex('options_users')
-          .where({
-            optionId: req.params.optionId,
-            userId: req.user.id
-          })
-          .del()
-          .then((deletedRow) => {
-            if (deletedRow > 0) {
-              return res.status(200).json({ message: 'Unsubmit success' })
-            }
-            else {
-              return res.json({ message: 'Something wrong when unsubmit' })
-            }
-          })
-      }
-    })
-    .catch((err) => {
-      return res.json({ message: 'Something wrong' })
-    })
+const submit = async (req, res) => {
+  try {
+    const optionId = parseInt(req.params.optionId);
+    const userId = req.user.id;
 
+    const [optionUser, created] = await OptionUser.findOrCreate({
+      where: {
+        optionId: optionId,
+        userId: userId,
+      },
+      defaults: {
+        optionId: optionId,
+        userId: userId,
+      },
+    });
+
+    if (created) {
+      return res.status(200).json({ message: 'submitted successfully' });
+    } else {
+      return res.json({ message: 'You voted this option' });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: 'error' });
+  }
+};
+
+
+const unsubmit = async (req, res) => {
+  try {
+    const isExist = await OptionUser.findOne({
+      where: {
+        [Op.and]: [
+          { optionId: req.params.optionId },
+          { userId: req.user.id }
+        ]
+      }
+    })
+    if (isExist === null) {
+      return res.json({ message: `you have not voted this option` })
+    }
+    else {
+      await isExist.destroy();
+      return res.json({ message: `Unsubmitted successfully` })
+    }
+  } catch (error) {
+    return res.status(500).json({ message: 'error' })
+  }
 }
 module.exports = {
-    createPoll,
-    updatePoll,
-    getPoll,
-    deleteOption,
-    deletePoll,
-    updateOption,
-    addOption,
-    submitUnsubmit
+  createPoll,
+  updatePoll,
+  getPoll,
+  deleteOption,
+  deletePoll,
+  updateOption,
+  addOption,
+  submit,
+  unsubmit,
 }

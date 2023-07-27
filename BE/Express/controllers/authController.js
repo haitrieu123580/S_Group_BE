@@ -1,24 +1,31 @@
 require('dotenv').config()
-const knex = require('../database/connection')
 const { hashedPassword, comparePassword } = require("../hash/hash")
-const {mailService} = require('../services/mail.service')
+const { mailService } = require('../services/mail.service')
 const { cacheService } = require('../services/cache.service')
 const jsonwebtoken = require('jsonwebtoken')
 const crypto = require('crypto')
+const User = require('../models/User.model')
+const { Op } = require("sequelize");
 const register = async (req, res) => {
-    const existedUsername = await knex.select().from('users').where('username', req.body.username).first()
+    // find existed user
+    const existedUsername = await User.findOne({ where: { username: req.body.username } })
     if (!existedUsername) {
-        const { salt, ecryptedPassword } = await hashedPassword(req.body.password)
+        const { salt, encryptedPassword } = await hashedPassword(req.body.password)
         user = {
             username: req.body.username,
-            password: ecryptedPassword,
+            password: encryptedPassword,
             email: req.body.email,
             gender: req.body.gender,
             name: req.body.name,
             age: parseInt(req.body.age),
             salt: salt,
         }
-        await knex.insert(user).into('users')
+        try {
+            await User.create(user)
+        } catch (error) {
+            return res.status(200).json({ message: 'error when creating new user' })
+        }
+
         return res.status(201).json({ message: 'created new user' })
     }
     return res.status(200).json({ message: 'username already existed' })
@@ -27,7 +34,7 @@ const login = async (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
     try {
-        const user = await knex.select('*').from('users').where('username', username).first()
+        const user = await User.findOne({ where: { username: username } })
         // Case 1: User does not exist
         if (!user) {
             return res.status(400).json({
@@ -64,65 +71,76 @@ const login = async (req, res) => {
             });
         }
     } catch (error) {
-        return res.status(500).json({message:'Error'})
+        return res.status(500).json({ message: 'Error' })
     }
 
 }
 const forgotPassword = async (req, res) => {
     email = req.body.email
-    // check exist email
-    const isExist = knex.select().from('users').where('email', email).first()
-    if (isExist) {
-        const secretKey = crypto.randomBytes(16).toString('hex');
-        const passwordResetToken = crypto.createHash('sha256').update(secretKey).digest('hex');
+    try {
+        const isExist = await User.findOne({ where: { email: email } })
+        if (isExist) {
+            // create new passwordReset token and expired time
+            const secretKey = crypto.randomBytes(16).toString('hex');
+            const passwordResetToken = crypto.createHash('sha256').update(secretKey).digest('hex');
+            const passwordResetAt = new Date(Date.now() + 10 * 60 * 1000);
+            const updateStatus = await User.update({
+                passwordResetToken: passwordResetToken,
+                passwordResetAt: passwordResetAt
+            },
+                { where: { email: email } }
+            );
+            // send token to user email
+            if (updateStatus) {
+                await mailService.sendEmail({
+                    emailFrom: 'admin@gmail.com',
+                    emailTo: email,
+                    emailSubject: 'Reset password',
+                    emailText: `Reset token: ${passwordResetToken}`,
+                })
+                res.status(200).json({ message: 'Check your email, plz' })
+            }
+            else {
+                res.status(400).json({ message: `email not valid` })
+            }
 
-        const passwordResetAt = new Date(Date.now() + 10 * 60 * 1000);
-        const updateStatus = await knex('users')
-            .where('email', '=', email)
-            .update({
-                'passwordResetToken': passwordResetToken,
-                'passwordResetAt': passwordResetAt,
-            })
-        if (updateStatus) {
-            await mailService.sendEmail({
-                emailFrom: 'admin@gmail.com',
-                emailTo: email,
-                emailSubject: 'Reset password',
-                emailText: `Reset token: ${passwordResetToken}`,
-            })
-            // save passwordResetToken and passwordResetExpiration to DB
-            res.status(200).json({ message: 'Check your email, plz' })
         }
         else {
-            res.status(400).json({ message: `email not valid` })
+            res.json({ message: 'email not exist' })
         }
+    } catch (error) {
+        return res.json({ message: 'error' })
+    }
 
-    }
-    else {
-        res.json({ message: 'email not exist' })
-    }
 }
 const resetPassword = async (req, res) => {
     try {
         const { email, passwordResetToken, newPassword } = req.body;
-        const isExist = await knex('users')
-            .select()
-            .from('users')
-            .where({
-                'email': email,
-                'passwordResetToken': passwordResetToken
-            })
-            .andWhere('passwordResetAt', '>', new Date()).first()
+        const isExist = await User.findOne(
+            {
+                where: {
+                    email: email,
+                    passwordResetToken: passwordResetToken,
+                    [Op.gt]: new Date()
+                }
+            }
+        )
         if (isExist) {
-            const { salt, ecryptedPassword } = await hashedPassword(newPassword)
-            const updateUser = await knex('users')
-                .where('email', email)
-                .update({
-                    'password': ecryptedPassword,
-                    'salt': salt,
-                    'passwordResetToken': null,
-                    'passwordResetAt': null
-                })
+
+            const { salt, encryptedPassword } = await hashedPassword(newPassword)
+            const updateUser = await User.update(
+                {
+                    password: encryptedPassword,
+                    passwordResetToken: null,
+                    passwordResetAt: null,
+                    salt: salt
+                },
+                {
+                    where: {
+                        email: email
+                    }
+                }
+            )
             if (updateUser) {
                 return res.status(200).json({
                     message: 'reset password successfully',

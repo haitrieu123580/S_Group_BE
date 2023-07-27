@@ -9,5 +9,6 @@ router.post('/update-poll/add-options/:pollId', [verifyToken], asyncHandler(poll
 router.delete('/update-poll/delete-option/:optionId', [verifyToken],asyncHandler(pollController.deleteOption))
 router.delete('/delete-poll/:pollId', [verifyToken], asyncHandler(pollController.deletePoll))
 router.get('/get-poll/:pollId', [verifyToken], asyncHandler(pollController.getPoll))
-router.get('/submit-vote/:optionId', [verifyToken], asyncHandler(pollController.submitUnsubmit))
+router.get('/submit-vote/:optionId', [verifyToken], asyncHandler(pollController.submit))
+router.get('/unsubmit-vote/:optionId', [verifyToken], asyncHandler(pollController.unsubmit))
 module.exports = router

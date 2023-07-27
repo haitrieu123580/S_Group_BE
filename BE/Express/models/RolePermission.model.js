@@ -29,15 +29,15 @@ const RolePermission = sequelize.define('roles_permissions', {
     tableName: 'roles_permissions',
     timestamps: false
 });
-sequelize.sync().then(() => {
+// sequelize.sync().then(() => {
 
-    RolePermission.findAll().then(res => {
-        console.log(res)
-    }).catch((error) => {
-        console.error('Failed to retrieve data : ', error);
-    });
+//     RolePermission.findAll().then(res => {
+//         console.log(res)
+//     }).catch((error) => {
+//         console.error('Failed to retrieve data : ', error);
+//     });
 
-}).catch((error) => {
-    console.error('Unable to create table : ', error);
-});
+// }).catch((error) => {
+//     console.error('Unable to create table : ', error);
+// });
 module.exports = RolePermission

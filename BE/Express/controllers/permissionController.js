@@ -1,20 +1,25 @@
-const knex = require('../database/connection');
+const Permission = require('../models/Permission.model')
 // CREATE NEW PERMISSION
 const createPermission = async (req, res) => {
     try {
-        const permission = req.body.name;
-        const result = await knex('permissions').insert({ name: permission })
-        if (!result) {
-            return res.status(400).json({
-                message: 'Something wrong when creating permission',
-            });
+        const permissionName = req.body.name;
+        const [permission, created] = await Permission.findOrCreate({
+            where: {
+                name: permissionName
+            },
+            defaults:
+            {
+                name: permissionName
+            }
+        })
+        if (created) {
+            return res.status(200).json({ message: 'created new permission successfully' });
         }
         else {
-            return res.status(200).json({ message: 'Created' })
+            return res.json({ message: 'Permission existed' });
         }
     } catch (error) {
-        console.log(error);
-        return res.status(400).json({
+        return res.status(500).json({
             message: 'Something wrong when creating permission',
         });
     }
@@ -22,26 +27,36 @@ const createPermission = async (req, res) => {
 // UPDATE PERMISSION
 const updatePermission = async (req, res) => {
     try {
-        const role = await knex('permissions').where('id', parseInt(req.params.permissionId)).first();
-        if (!role) {
-            return res.status(404).json({
-                message: 'permission could not be found',
-            });
+        const isExist = await Permission.findOne({
+            where: {
+                id: parseInt(req.params.permissionId)
+            }
+        })
+        if (isExist) {
+            const result = await Permission.update(
+                {
+                    name: req.body.name
+                },
+                {
+                    where: {
+                        id: parseInt(req.params.permissionId)
+                    }
+                }
+            )
+            return res.status(200).json({ message: 'permission updated' })
         }
-        await knex('permissions')
-            .where({ id: parseInt(req.params.permissionId) })
-            .update({
-                name: req.body.name
-            })
-        return res.status(200).json({ message: 'Update success' });
+        else {
+            return res.json({ message: 'permisison not found' })
+        }
     } catch (error) {
-        return res.status(500).json({ message: 'Something wrong when updating permission' })
+        console.log(error);
+        return res.status(500).json({ message: 'Something wrong when updating permisison' })
     }
 }
 // READ PERMISSION
 const getPermission = async (req, res) => {
     try {
-        const result = await knex.select().from('permissions')
+        const result = await Permission.findAll()
         return res.status(200).json(result)
     } catch (error) {
         return res.status(500).json({ message: 'Something wrong' })
@@ -50,19 +65,20 @@ const getPermission = async (req, res) => {
 // DELETE PERMISSION
 const deletePermission = async (req, res) => {
     try {
-        const perrmission = await knex('permissions')
-            .where('id', parseInt(req.params.permissionId))
-            .first();
-        if (!perrmission) {
-            return res.status(404).json({
-                message: 'permission could not be found',
-            });
+        const isExist = await Permission.findOne({
+            where: {
+                id: parseInt(req.params.permissionId)
+            }
+        })
+        if (isExist === null) {
+            return res.json({ message: `permission not found` })
         }
-        const response = await knex('permissions').where({ id: parseInt(req.params.permissionId) }).del();
-        return res.json(response);
+        else {
+            await isExist.destroy();
+            return res.json({ message: `permission deleted successfully` })
+        }
     } catch (error) {
-        console.log(error);
-        return res.status(500).json({ message: 'Error when connect to mysql' });
+        return res.status(500).json({ message: 'error' })
     }
 }
 module.exports = {
