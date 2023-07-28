@@ -1,99 +1,144 @@
 const knex = require('../database/connection')
 const { hashedPassword } = require('../hash/hash');
+const User = require('../models/User.model');
+const UserRole = require('../models/UserRole.model')
 // create new user by admin
 const createUser = async (req, res) => {
-    const existedUsername = await knex.select().from('users').where('username', req.body.username).first()
-    if (!existedUsername) {
-        const { salt, ecryptedPassword } = await hashedPassword(req.body.password)
-        user = {
-            username: req.body.username,
-            password: ecryptedPassword,
-            email: req.body.email,
-            gender: req.body.gender,
-            name: req.body.name,
-            age: parseInt(req.body.age),
-            salt: salt,
-            createdBy: req.user.id,
-        }
-        await knex.insert(user).into('users')
-        return res.status(201).json({ message: 'created new user' })
+    try {
+      console.log(req.body);
+      const { salt, encryptedPassword } = await hashedPassword(req.body.password); 
+      const [user, created] = await User.findOrCreate({
+        where: {
+          username: req.body.username,
+        },
+        defaults: {
+          username: req.body.username,
+          password: encryptedPassword, 
+          email: req.body.email,
+          gender: req.body.gender,
+          name: req.body.name,
+          age: parseInt(req.body.age),
+          salt: salt,
+          createdBy: req.user.id,
+        },
+      });
+  
+      if (created) {
+        return res.status(200).json({ message: 'created new user successfully' });
+      } else {
+        return res.json({ message: 'user existed' });
+      }
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({
+        message: 'Something wrong when creating new user',
+      });
     }
-    return res.status(200).json({ message: 'username already existed' })
+  };
 
-}
+// Hàm lấy danh sách người dùng với phân trang và tìm kiếm theo tuổi
 const getUsers = async (req, res) => {
-    let page_size = req.query.page_size || 10; // Kích thước trang mặc định là 10 nếu không được cung cấp
-    let page_index = req.query.page_index || 1; // Trang hiện tại mặc định là 1 nếu không được cung cấp
-    let age = req.query.age || null; // Giá trị tuổi tìm kiếm, mặc định là null nếu không được cung cấp
-
-    let query = knex.select("id", "name", "age").from("users");
-
-    // Tìm kiếm theo tuổi nếu giá trị tuổi được cung cấp
-    if (age) {
-        query = query.where("age", age);
-    }
-    // Đếm tổng số bản ghi
-    let countQuery = knex.count("* as count").from("users").first();
-    let countResult = await countQuery;
-
-    let count = countResult.count;
+    let page_size = parseInt(req.query.page_size) || 10;
+    let page_index = parseInt(req.query.page_index) || 1;
     let offset = (page_index - 1) * page_size;
-    // Lấy dữ liệu người dùng với phân trang và tìm kiếm theo tuổi
-    let dataQuery = query.offset(offset).limit(page_size);
-    let dataResult = await dataQuery;
-    let rows = dataResult;
-    let pagination = {};
-    pagination.total = count;
-    pagination.per_page = page_size;
-    pagination.offset = offset;
-    pagination.to = offset + rows.length;
-    pagination.last_page = Math.ceil(count / page_size);
-    pagination.current_page = page_index;
-    pagination.from = offset;
-    pagination.data = rows;
-    res.status(200).json({ message: pagination });
-}
+  
+    try {
+      // Đếm tổng số bản ghi
+      let count = await User.count();
+  
+      // Lấy dữ liệu người dùng với phân trang và tìm kiếm theo tuổi
+      let users = await User.findAll({
+        attributes: ['id', 'name'],
+        offset: offset,
+        limit: page_size,
+      });
+  
+      let pagination = {
+        total: count,
+        per_page: page_size,
+        offset: offset,
+        to: offset + users.length,
+        last_page: Math.ceil(count / page_size),
+        current_page: page_index,
+        from: offset,
+        data: users,
+      };
+  
+      res.status(200).json({ message: pagination });
+    } catch (error) {
+        console.log(error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  };
 
 //get user by id
 const getUserById = async (req, res) => {
-    const user = await knex.select().from('users').where('id', '=', req.user.id).first()
-    return res.status(200).json({ message: user })
+    try {
+        const user = await User.findByPk(parseInt(req.params.id));
+        if (user === null) {
+            return res.json({message: 'not found'})
+        } else {
+            return res.status(200).json({message: user})
+        }
+    } catch (error) {
+        return res.status(500).json({
+            message: 'Something wrong',
+        });
+    }
 }
 // update user by id
 const updateUser = async (req, res) => {
-    await knex('users')
-        .where('id', req.params.id)
-        .first()
-        .update({
-            'name': req.body.name,
-            'age': req.body.age,
-            'gender': req.body.gender,
-        })
-    return res.status(200).json({ message: 'update successed' })
+    try {
+        const updateUser = {
+            name: req.body.name,
+            age: req.body.age,
+            gender: req.body.gender
+        }
+        await User.update(
+            updateUser,
+            {
+                where: {
+                    id: parseInt(req.params.id)
+                }
+            }
+        )
+        return res.status(200).json({message: 'Updated successfully'})
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({message: 'Error'})
+    }
 }
 // delete user
 const deleteUser = async (req, res) => {
-    await knex('users')
-        .where('id', req.params.id)
-        .first()
-        .del()
-    return res.status(200).json({ message: 'delete successed' })
+    try {
+        const result = await User.destroy({
+            where: {
+                id: parseInt(req.params.id)
+            }
+        });
+        if (result) {
+            return res.status(200).json({ message: 'deleted User' });
+          } else {
+            return res.json({ message: 'User not found' });
+          }
+    } catch (error) {
+        console.log(error);
+        return res.status(200).json({message: 'Error'})
+    }
 }
 // ASSIGN ROLE TO USER
 const assignRoleToUser = async (req, res) => {
     try {
         const userId = parseInt(req.params.userId)
         const { roles } = req.body;
-        // find existed role
-        const user = knex('users').select().where('id', userId).first()
+        const user = await User.findByPk(userId)
         if (!user) {
             return res.status(404).json({ message: 'user not found' })
         }
         const roleWithUserId = roles.map((x) => {
             return { userId: userId, roleId: parseInt(x) }
         })
-        await knex('users_roles')
-            .insert(roleWithUserId)
+        await UserRole.bulkCreate(roleWithUserId);
         return res.status(201).json({ message: 'assigned roles' })
     } catch (error) {
         console.log(error);

@@ -109,19 +109,24 @@ const forgotPassword = async (req, res) => {
             res.json({ message: 'email not exist' })
         }
     } catch (error) {
+        console.log(error);
         return res.json({ message: 'error' })
     }
 
 }
 const resetPassword = async (req, res) => {
     try {
-        const { email, passwordResetToken, newPassword } = req.body;
+        var { email, passwordResetToken, newPassword } = req.body;
+        console.log(req.body);
         const isExist = await User.findOne(
             {
                 where: {
                     email: email,
                     passwordResetToken: passwordResetToken,
-                    [Op.gt]: new Date()
+                    passwordResetAt:{
+                        [Op.gt]: new Date()
+                    }
+                    
                 }
             }
         )
@@ -159,6 +164,7 @@ const resetPassword = async (req, res) => {
             });
         }
     } catch (error) {
+        console.log(error);
         return res.status(500).json({
             message: 'error'
         });

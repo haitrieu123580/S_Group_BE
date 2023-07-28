@@ -82,8 +82,8 @@ const deletePermission = async (req, res) => {
     }
 }
 module.exports = {
-    createPermission, 
-    updatePermission, 
-    deletePermission, 
+    createPermission,
+    updatePermission,
+    deletePermission,
     getPermission
 }
