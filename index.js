@@ -1,6 +1,8 @@
 const express = require('express')
 require('dotenv').config();
+const cors = require('cors')
 const app = express()
+app.use(cors());
 const PORT =  process.env.PORT || 5000
 // chuyen tat cac yeu cau bat dau /user sang userRouter
 const userRouter = require("./routers/User")

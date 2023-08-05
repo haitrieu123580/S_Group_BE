@@ -66,7 +66,7 @@ const login = async (req, res) => {
                 message: data,
             });
         } else {
-            return res.status(401).json({
+            return res.json({
                 message: 'Invalid credentials',
             });
         }
