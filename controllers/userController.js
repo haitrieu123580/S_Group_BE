@@ -45,10 +45,10 @@ const getUsers = async (req, res) => {
     try {
       // Đếm tổng số bản ghi
       let count = await User.count();
-  
+    
       // Lấy dữ liệu người dùng với phân trang và tìm kiếm theo tuổi
       let users = await User.findAll({
-        attributes: ['id', 'name'],
+        attributes: ['id','username', 'name', 'age', 'email', 'createdBy', 'createdAt', 'gender'],
         offset: offset,
         limit: page_size,
       });
@@ -61,10 +61,10 @@ const getUsers = async (req, res) => {
         last_page: Math.ceil(count / page_size),
         current_page: page_index,
         from: offset,
-        data: users,
+        users: users,
       };
   
-      res.status(200).json({ message: pagination });
+      res.status(200).json({ users});
     } catch (error) {
         console.log(error);
       res.status(500).json({ message: 'Internal server error' });
@@ -119,11 +119,11 @@ const deleteUser = async (req, res) => {
         if (result) {
             return res.status(200).json({ message: 'deleted User' });
           } else {
-            return res.json({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found' });
           }
     } catch (error) {
         console.log(error);
-        return res.status(200).json({message: 'Error'})
+        return res.status(500).json({message: 'Error'})
     }
 }
 // ASSIGN ROLE TO USER
@@ -154,4 +154,4 @@ module.exports = {
     updateUser,
     deleteUser,
     assignRoleToUser
-}
+  }

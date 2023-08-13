@@ -22,11 +22,11 @@ const register = async (req, res) => {
         }
         try {
             await User.create(user)
+            return res.status(201).json({ message: 'Created new user' })
         } catch (error) {
-            return res.status(200).json({ message: 'error when creating new user' })
+            console.log(error);
+            res.json({ message: 'error when creating new user' })
         }
-
-        return res.status(201).json({ message: 'created new user' })
     }
     return res.status(200).json({ message: 'username already existed' })
 }
@@ -66,7 +66,7 @@ const login = async (req, res) => {
                 message: data,
             });
         } else {
-            return res.json({
+            return res.status(200).json({
                 message: 'Invalid credentials',
             });
         }
