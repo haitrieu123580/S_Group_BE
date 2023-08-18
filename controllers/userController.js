@@ -2,6 +2,28 @@ const knex = require('../database/connection')
 const { hashedPassword } = require('../hash/hash');
 const User = require('../models/User.model');
 const UserRole = require('../models/UserRole.model')
+// fake-data
+const fakeData = async(req, res) =>{
+  try {
+    for (i = 11; i<40; i++){
+      const { salt, encryptedPassword } = await hashedPassword('password'); 
+    await User.create({
+      username: `user${i}`,
+      password: encryptedPassword, 
+      email: `user${i}@email.com`,
+      gender: false,
+      name: `user${i}`,
+      age: 18,
+      salt: salt,
+    });
+
+    }
+    res.send('fake-data')
+
+  } catch (error) {
+    
+  }
+}
 // create new user by admin
 const createUser = async (req, res) => {
     try {
@@ -36,17 +58,13 @@ const createUser = async (req, res) => {
     }
   };
 
-// Hàm lấy danh sách người dùng với phân trang và tìm kiếm theo tuổi
 const getUsers = async (req, res) => {
     let page_size = parseInt(req.query.page_size) || 10;
     let page_index = parseInt(req.query.page_index) || 1;
     let offset = (page_index - 1) * page_size;
   
     try {
-      // Đếm tổng số bản ghi
       let count = await User.count();
-    
-      // Lấy dữ liệu người dùng với phân trang và tìm kiếm theo tuổi
       let users = await User.findAll({
         attributes: ['id','username', 'name', 'age', 'email', 'createdBy', 'createdAt', 'gender'],
         offset: offset,
@@ -153,5 +171,6 @@ module.exports = {
     getUserById,
     updateUser,
     deleteUser,
-    assignRoleToUser
+    assignRoleToUser,
+    fakeData
   }

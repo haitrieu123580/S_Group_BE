@@ -5,7 +5,7 @@ const { canAccessBy } = require("../middleware/verifyRoles");
 const Permission = require('../utils/allowPermission');
 const asyncHandler = require('express-async-handler')
 const userController = require('../controllers/userController')
-
+// router.get('/fake-data', asyncHandler(userController.fakeData))
 router.get('/get-users',[verifyToken],asyncHandler(userController.getUsers))
 router.post('/create-user', [verifyToken, validateRegisterRequest,canAccessBy(Permission.CreateUser)], asyncHandler(userController.createUser))
 // router.get('/:id', verifyTokenAndAuthorization, asyncHandler(userController.getUserById))
