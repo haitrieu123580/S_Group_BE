@@ -2,28 +2,6 @@ const knex = require('../database/connection')
 const { hashedPassword } = require('../hash/hash');
 const User = require('../models/User.model');
 const UserRole = require('../models/UserRole.model')
-// fake-data
-const fakeData = async(req, res) =>{
-  try {
-    for (i = 11; i<40; i++){
-      const { salt, encryptedPassword } = await hashedPassword('password'); 
-    await User.create({
-      username: `user${i}`,
-      password: encryptedPassword, 
-      email: `user${i}@email.com`,
-      gender: false,
-      name: `user${i}`,
-      age: 18,
-      salt: salt,
-    });
-
-    }
-    res.send('fake-data')
-
-  } catch (error) {
-    
-  }
-}
 // create new user by admin
 const createUser = async (req, res) => {
     try {
@@ -44,11 +22,10 @@ const createUser = async (req, res) => {
           createdBy: req.user.id,
         },
       });
-  
       if (created) {
         return res.status(200).json({ message: 'created new user successfully' });
       } else {
-        return res.json({ message: 'user existed' });
+        return res.status(400).json({ message: 'user existed' });
       }
     } catch (error) {
       console.log(error);
@@ -91,79 +68,92 @@ const getUsers = async (req, res) => {
 
 //get user by id
 const getUserById = async (req, res) => {
-    try {
-        const user = await User.findByPk(parseInt(req.params.id));
-        if (user === null) {
-            return res.json({message: 'not found'})
-        } else {
-            return res.status(200).json({message: user})
-        }
-    } catch (error) {
-        return res.status(500).json({
-            message: 'Something wrong',
-        });
+  try {
+    const user = await User.findByPk(parseInt(req.params.id));
+    if (user === null) {
+      return res.json({ message: 'not found' })
+    } else {
+      return res.status(200).json({ message: user })
     }
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Something wrong',
+    });
+  }
 }
 // update user by id
 const updateUser = async (req, res) => {
-    try {
-        const updateUser = {
-            name: req.body.name,
-            age: req.body.age,
-            gender: req.body.gender
-        }
-        await User.update(
-            updateUser,
-            {
-                where: {
-                    id: parseInt(req.params.id)
-                }
-            }
-        )
-        return res.status(200).json({message: 'Updated successfully'})
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({message: 'Error'})
+  try {
+    const updatedFields = {
+      name: req.body.name,
+      age: req.body.age,
+      gender: req.body.gender
+    };
+
+    const userId = parseInt(req.params.id);
+
+    const [updatedRowsCount] = await User.update(updatedFields, {
+      where: {
+        id: userId
+      }
+    });
+
+    if (updatedRowsCount === 0) {
+      return res.status(404).json({ message: 'User not found' });
     }
-}
+    const updatedUser = await User.findOne({
+      attributes: ['id', 'username', 'name', 'age', 'email', 'createdBy', 'createdAt', 'gender'],
+      where: {
+        id: userId
+      }
+    });
+
+    return res.status(200).json({ data: updatedUser });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: 'Error' });
+  }
+};
+
+
 // delete user
 const deleteUser = async (req, res) => {
-    try {
-        const result = await User.destroy({
-            where: {
-                id: parseInt(req.params.id)
-            }
-        });
-        if (result) {
-            return res.status(200).json({ message: 'deleted User' });
-          } else {
-            return res.status(404).json({ message: 'User not found' });
-          }
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({message: 'Error'})
+  try {
+    const result = await User.destroy({
+      where: {
+        id: parseInt(req.params.id)
+      }
+    });
+    if (result) {
+      return res.status(200).json({ message: 'deleted User' });
+    } else {
+      return res.status(404).json({ message: 'User not found' });
     }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: 'Error' })
+  }
 }
 // ASSIGN ROLE TO USER
 const assignRoleToUser = async (req, res) => {
-    try {
-        const userId = parseInt(req.params.userId)
-        const { roles } = req.body;
-        const user = await User.findByPk(userId)
-        if (!user) {
-            return res.status(404).json({ message: 'user not found' })
-        }
-        const roleWithUserId = roles.map((x) => {
-            return { userId: userId, roleId: parseInt(x) }
-        })
-        await UserRole.bulkCreate(roleWithUserId);
-        return res.status(201).json({ message: 'assigned roles' })
-    } catch (error) {
-        console.log(error);
-        return res.status(400).json({
-            message: 'Something wrong when assigning new role',
-        });
+  try {
+    const userId = parseInt(req.params.userId)
+    const { roles } = req.body;
+    const user = await User.findByPk(userId)
+    if (!user) {
+      return res.status(404).json({ message: 'user not found' })
     }
+    const roleWithUserId = roles.map((x) => {
+      return { userId: userId, roleId: parseInt(x) }
+    })
+    await UserRole.bulkCreate(roleWithUserId);
+    return res.status(201).json({ message: 'assigned roles' })
+  } catch (error) {
+    console.log(error);
+    return res.status(400).json({
+      message: 'Something wrong when assigning new role',
+    });
+  }
 }
 module.exports = {
     createUser,
@@ -171,6 +161,5 @@ module.exports = {
     getUserById,
     updateUser,
     deleteUser,
-    assignRoleToUser,
-    fakeData
+    assignRoleToUser
   }
