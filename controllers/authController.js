@@ -8,27 +8,34 @@ const User = require('../models/User.model')
 const { Op } = require("sequelize");
 const register = async (req, res) => {
     // find existed user
-    const existedUsername = await User.findOne({ where: { username: req.body.username } })
-    if (!existedUsername) {
-        const { salt, encryptedPassword } = await hashedPassword(req.body.password)
-        user = {
-            username: req.body.username,
-            password: encryptedPassword,
-            email: req.body.email,
-            gender: req.body.gender,
-            name: req.body.name,
-            age: parseInt(req.body.age),
-            salt: salt,
+    try {
+        const existedUsername = await User.findOne({ where: { username: req.body.username } })
+        if (!existedUsername) {
+            const { salt, encryptedPassword } = await hashedPassword(req.body.password)
+            user = {
+                username: req.body.username,
+                password: encryptedPassword,
+                email: req.body.email,
+                gender: req.body.gender,
+                name: req.body.name,
+                age: parseInt(req.body.age),
+                salt: salt,
+            }
+            try {
+                await User.create(user)
+                return res.status(201).json({ message: 'Created new user' })
+            } catch (error) {
+                console.log(error);
+                return res.json({ message: 'Something not valid' })
+            }
         }
-        try {
-            await User.create(user)
-            return res.status(201).json({ message: 'Created new user' })
-        } catch (error) {
-            console.log(error);
-            res.json({ message: 'error when creating new user' })
+        else{
+            return res.status(200).json({ message: 'Username Already Exist' })
         }
+    } catch (error) {
+       return  res.status(500).json({ message: 'error when creating new user' })
+
     }
-    return res.status(200).json({ message: 'username already existed' })
 }
 const login = async (req, res) => {
     const username = req.body.username;
@@ -66,7 +73,7 @@ const login = async (req, res) => {
                 message: data,
             });
         } else {
-            return res.status(200).json({
+            return res.status(400).json({
                 message: 'Invalid credentials',
             });
         }
@@ -76,44 +83,41 @@ const login = async (req, res) => {
 
 }
 const forgotPassword = async (req, res) => {
-    email = req.body.email
+    const email = req.body.email; // Đảm bảo khai báo 'email' bằng 'const' hoặc 'let'
     try {
-        const isExist = await User.findOne({ where: { email: email } })
-        if (isExist) {
-            // create new passwordReset token and expired time
+        const user = await User.findOne({ where: { email: email } });
+        if (user) {
             const secretKey = crypto.randomBytes(16).toString('hex');
-            const passwordResetToken = crypto.createHash('sha256').update(secretKey).digest('hex');
+            // const passwordResetToken = crypto.createHash('sha256').update(secretKey).digest('hex');
             const passwordResetAt = new Date(Date.now() + 10 * 60 * 1000);
-            const updateStatus = await User.update({
-                passwordResetToken: passwordResetToken,
+            const otp = Math.floor(Math.random() * 10000)
+            // Update user data with passwordResetToken and passwordResetAt
+            await user.update({
+                // passwordResetToken: passwordResetToken,
+                passwordResetToken: otp,
                 passwordResetAt: passwordResetAt
-            },
-                { where: { email: email } }
-            );
-            // send token to user email
-            if (updateStatus) {
-                await mailService.sendEmail({
-                    emailFrom: 'admin@gmail.com',
-                    emailTo: email,
-                    emailSubject: 'Reset password',
-                    emailText: `Reset token: ${passwordResetToken}`,
-                })
-                res.status(200).json({ message: 'Check your email, plz' })
-            }
-            else {
-                res.status(400).json({ message: `email not valid` })
-            }
+            });
 
-        }
-        else {
-            res.json({ message: 'email not exist' })
+            // Send token to user email
+
+            await mailService.sendEmail({
+                emailFrom: 'admin@gmail.com',
+                emailTo: email,
+                emailSubject: 'Reset password',
+                // emailText: `Reset token: ${passwordResetToken}`,
+                emailText: `OTP: ${otp}`
+            });
+
+            return res.status(200).json({ message: 'Check your email, please.', type:'success'});
+        } else {
+           return res.status(200).json({ message: 'Email does not exist.', type: 'error'});
         }
     } catch (error) {
         console.log(error);
-        return res.json({ message: 'error' })
+        return res.status(500).json({ message: 'Internal server error.' });
     }
+};
 
-}
 const resetPassword = async (req, res) => {
     try {
         var { email, passwordResetToken, newPassword } = req.body;
@@ -149,11 +153,13 @@ const resetPassword = async (req, res) => {
             if (updateUser) {
                 return res.status(200).json({
                     message: 'reset password successfully',
+                    type: 'success'
                 });
             }
             else {
-                return res.status(400).json({
+                return res.status(200).json({
                     message: 'reset password failed',
+                    type: 'error'
                 });
             }
 
