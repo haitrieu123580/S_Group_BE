@@ -29,12 +29,12 @@ const register = async (req, res) => {
                 return res.json({ message: 'Something not valid' })
             }
         }
-        else{
+        else {
             return res.status(200).json({ message: 'Username Already Exist' })
         }
     } catch (error) {
-       return  res.status(500).json({ message: 'error when creating new user' })
-
+        console.log(error)
+        return res.status(500).json({ message: 'error when creating new user' })
     }
 }
 const login = async (req, res) => {
@@ -108,9 +108,9 @@ const forgotPassword = async (req, res) => {
                 emailText: `OTP: ${otp}`
             });
 
-            return res.status(200).json({ message: 'Check your email, please.', type:'success'});
+            return res.status(200).json({ message: 'Check your email, please.', type: 'success' });
         } else {
-           return res.status(200).json({ message: 'Email does not exist.', type: 'error'});
+            return res.status(200).json({ message: 'Email does not exist.', type: 'error' });
         }
     } catch (error) {
         console.log(error);
@@ -127,10 +127,10 @@ const resetPassword = async (req, res) => {
                 where: {
                     email: email,
                     passwordResetToken: passwordResetToken,
-                    passwordResetAt:{
+                    passwordResetAt: {
                         [Op.gt]: new Date()
                     }
-                    
+
                 }
             }
         )

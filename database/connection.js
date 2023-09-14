@@ -1,14 +1,28 @@
 require('dotenv').config()
-var mysql = require('mysql');
 const knex = require('knex')
-const db = knex({
-  client: 'mysql', 
+const con = knex({
+  client: 'mysql2',
   connection: {
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
-      port: process.env.DB_PORT,
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT,
   },
 });
-module.exports = db
+// var mysql = require('mysql2');
+
+// var con = mysql.createConnection({
+//   host: process.env.DB_HOST,
+//   user: process.env.DB_USER,
+//   password: process.env.DB_PASSWORD,
+//   database: process.env.DB_NAME,
+//   port: process.env.DB_PORT,
+// });
+
+// con.connect(function (err) {
+//   if (err) throw err;
+//   console.log("Connected!");
+// });
+
+module.exports = con

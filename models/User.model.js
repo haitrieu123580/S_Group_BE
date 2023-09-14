@@ -1,6 +1,6 @@
 const { Sequelize, DataTypes, literal } = require("sequelize");
 const sequelize = require('../database/sequelize')
-const User = sequelize.define('Users', {
+const User = sequelize.define('users', {
   id: {
     type: DataTypes.INTEGER.UNSIGNED,
     allowNull: false,
@@ -74,7 +74,7 @@ const User = sequelize.define('Users', {
     field: 'isAdmin'
   }
 }, {
-  tableName: 'Users',
+  tableName: 'users',
   timestamps: false
 });
 module.exports = User

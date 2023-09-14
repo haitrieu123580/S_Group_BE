@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "start": "node index",
-    "dev": "nodemon index"
+    "dev": "nodemon index",
+    "init-db": "node ./database/init.js "
   },
   "dependencies": {
     "cookie-parser": "~1.4.4",
