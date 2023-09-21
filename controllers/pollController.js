@@ -60,7 +60,7 @@ updateOption = async (req, res) => {
   try {
     const [numRowsUpdated, updatedOptions] = await Option.update(option, {
       where: { id: optionId },
-      returning: true, // Trả về dữ liệu sau khi cập nhật
+      returning: true, 
     });
 
     if (numRowsUpdated > 0) {
@@ -138,7 +138,7 @@ const getPoll = async (req, res) => {
             {
               model: User,
               attributes: ['id', 'name'],
-              through: { attributes: [] }, // Loại bỏ các trường không cần thiết từ bảng trung gian
+              through: { attributes: [] }, 
             },
           ],
         },

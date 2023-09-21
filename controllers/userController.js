@@ -148,8 +148,6 @@ const updateUser = async (req, res) => {
     if (updatedRowsCount === 0) {
       return res.status(404).json({ message: 'User not found' });
     }
-
-    // Truy vấn lại thông tin người dùng sau khi cập nhật thành công
     const updatedUser = await User.findOne({
       where: {
         id: userId

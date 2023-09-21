@@ -94,7 +94,7 @@ const assignPermissionToRole = async (req, res) => {
             return { roleId: roleId, permissionId: parseInt(x) }
         })
         await RolePermission.bulkCreate(permissionWithRoleId)
-        return res.status(201).json({ message: 'assigned perrmission' })
+        return res.status(201).json({ message: 'assigned permission' })
     } catch (error) {
         console.log(error);
         return res.status(400).json({

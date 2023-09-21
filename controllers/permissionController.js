@@ -46,11 +46,11 @@ const updatePermission = async (req, res) => {
             return res.status(200).json({ message: 'permission updated' })
         }
         else {
-            return res.json({ message: 'permisison not found' })
+            return res.json({ message: 'permission not found' })
         }
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: 'Something wrong when updating permisison' })
+        return res.status(500).json({ message: 'Something wrong when updating permission' })
     }
 }
 // READ PERMISSION

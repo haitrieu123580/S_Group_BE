@@ -83,7 +83,7 @@ const login = async (req, res) => {
 
 }
 const forgotPassword = async (req, res) => {
-    const email = req.body.email; // Đảm bảo khai báo 'email' bằng 'const' hoặc 'let'
+    const email = req.body.email; 
     try {
         const user = await User.findOne({ where: { email: email } });
         if (user) {
