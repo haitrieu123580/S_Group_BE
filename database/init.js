@@ -74,7 +74,8 @@ con.raw(`CREATE TABLE if not exists options_users (
 con.raw(`CREATE TABLE if not exists roles (
     id int NOT NULL AUTO_INCREMENT,
     name varchar(255) NOT NULL,
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    UNIQUE KEY name_UNIQUE (name)
     );`)
     .then(() => {
         console.log('Bảng đã được tạo hoặc tồn tại.');
@@ -101,7 +102,8 @@ con.raw(`CREATE TABLE if not exists users_roles (
 con.raw(`CREATE TABLE if not exists permissions (
     id int NOT NULL AUTO_INCREMENT,
     name varchar(255) NOT NULL,
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    UNIQUE KEY name_UNIQUE (name)
     );`)
     .then(() => {
         console.log('Bảng đã được tạo hoặc tồn tại.');

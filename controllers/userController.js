@@ -34,11 +34,11 @@ const getAll = async (req, res) => {
   }
 }
 // upload Avatar
-const uploadAvatar = async (req, res) =>{
+const uploadAvatar = async (req, res) => {
   try {
-    
+
   } catch (error) {
-    
+
   }
 }
 // create new user by admin
@@ -62,15 +62,17 @@ const createUser = async (req, res) => {
       },
     });
     if (created) {
-      return res.status(200).json({ data:{
-        id: user.id, 
-        username: user.username, 
-        email: user.email, 
-        gender: user.gender, 
-        age: user.age, 
-        createdBy: user.createdBy,
-        createdAt: user.createdAt
-      } });
+      return res.status(200).json({
+        data: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          gender: user.gender,
+          age: user.age,
+          createdBy: user.createdBy,
+          createdAt: user.createdAt
+        }
+      });
     } else {
       return res.status(400).json({ message: 'user existed' });
     }
@@ -106,7 +108,7 @@ const getUsers = async (req, res) => {
       users: users,
     };
 
-    res.status(200).json({ users });
+    res.status(200).json({ pagination });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: 'Internal server error' });
